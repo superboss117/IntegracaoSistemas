@@ -14,7 +14,7 @@ namespace ApostasApi.Services
             _db = db;
         }
 
-        public async Task<object> CriarJogoAsync(CriarJogoDto dto)
+        public async Task<JogoDto> CriarJogoAsync(CriarJogoDto dto)
         {
             var parameters = new List<IDataParameter>
             {
@@ -26,7 +26,14 @@ namespace ApostasApi.Services
                 new SqlParameter("@Estado", dto.Estado)
             };
 
-            return await _db.QueryAsync("SP_Inserir_Jogo", parameters);
+            var result = await _db.QueryAsync("SP_Inserir_Jogo", parameters);
+
+            if (result.Rows.Count == 0)
+            {
+                throw new Exception("A stored procedure não devolveu dados do jogo criado.");
+            }
+
+            return MapRowToJogoDto(result.Rows[0]);
         }
 
         public async Task AtualizarJogoAsync(string codigoJogo, AtualizarJogoDto dto)
@@ -42,7 +49,7 @@ namespace ApostasApi.Services
             await _db.ExecuteAsync("SP_Atualizar_Jogo", parameters);
         }
 
-        public async Task<object> ListarJogosAsync(DateTime? data, int? estado, string? competicao)
+        public async Task<List<JogoDto>> ListarJogosAsync(DateTime? data, int? estado, string? competicao)
         {
             var parameters = new List<IDataParameter>
             {
@@ -51,10 +58,19 @@ namespace ApostasApi.Services
                 new SqlParameter("@Competicao", (object?)competicao ?? DBNull.Value)
             };
 
-            return await _db.QueryAsync("SP_Listar_Jogos", parameters);
+            var result = await _db.QueryAsync("SP_Listar_Jogos", parameters);
+
+            var jogos = new List<JogoDto>();
+
+            foreach (DataRow row in result.Rows)
+            {
+                jogos.Add(MapRowToJogoDto(row));
+            }
+
+            return jogos;
         }
 
-        public async Task<object?> ObterJogoAsync(string codigoJogo)
+        public async Task<JogoDto?> ObterJogoAsync(string codigoJogo)
         {
             var parameters = new List<IDataParameter>
             {
@@ -66,7 +82,7 @@ namespace ApostasApi.Services
             if (result.Rows.Count == 0)
                 return null;
 
-            return result;
+            return MapRowToJogoDto(result.Rows[0]);
         }
 
         public async Task RemoverJogoAsync(string codigoJogo)
@@ -77,6 +93,20 @@ namespace ApostasApi.Services
             };
 
             await _db.ExecuteAsync("SP_Remover_Jogo", parameters);
+        }
+
+        private static JogoDto MapRowToJogoDto(DataRow row)
+        {
+            return new JogoDto
+            {
+                Id = row.Table.Columns.Contains("Id") && row["Id"] != DBNull.Value ? Convert.ToInt32(row["Id"]) : 0,
+                CodigoJogo = row.Table.Columns.Contains("Codigo_Jogo") ? row["Codigo_Jogo"]?.ToString() ?? string.Empty : string.Empty,
+                DataHora = row.Table.Columns.Contains("Data_Hora") && row["Data_Hora"] != DBNull.Value ? Convert.ToDateTime(row["Data_Hora"]) : default,
+                EquipaCasa = row.Table.Columns.Contains("Equipa_Casa") ? row["Equipa_Casa"]?.ToString() ?? string.Empty : string.Empty,
+                EquipaFora = row.Table.Columns.Contains("Equipa_Fora") ? row["Equipa_Fora"]?.ToString() ?? string.Empty : string.Empty,
+                Competicao = row.Table.Columns.Contains("Competicao") ? row["Competicao"]?.ToString() ?? string.Empty : string.Empty,
+                Estado = row.Table.Columns.Contains("Estado") && row["Estado"] != DBNull.Value ? Convert.ToInt32(row["Estado"]) : 0
+            };
         }
     }
 }

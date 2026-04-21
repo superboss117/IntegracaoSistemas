@@ -12,6 +12,6 @@ namespace ApostasApi.Services;
 public interface IResultadoService
 {
     Task<ApiResult<object>> CriarAsync(CriarResultadoDto dto);
-    Task<ApiResult<object>> ObterPorJogoAsync(string codigoJogo);
+    Task<ApiResult<ResultadoDto>> ObterPorJogoAsync(string codigoJogo);
 }
 

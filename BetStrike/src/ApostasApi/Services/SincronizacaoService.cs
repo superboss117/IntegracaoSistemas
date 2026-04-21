@@ -9,9 +9,9 @@ namespace ApostasApi.Services
     public class SincronizacaoService
     {
         private readonly HttpClient _httpClient;
-        private readonly JogoService _jogoService;
+        private readonly IJogoService _jogoService;
 
-        public SincronizacaoService(HttpClient httpClient, JogoService jogoService)
+        public SincronizacaoService(HttpClient httpClient, IJogoService jogoService)
         {
             _httpClient = httpClient;
             _jogoService = jogoService;

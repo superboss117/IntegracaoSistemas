@@ -14,7 +14,9 @@ namespace ResultadosAPI.Services
 
         public JogoService(IConfiguration configuration)
         {
-            _connectionString = configuration.GetConnectionString("Resultados")!;
+             _connectionString = configuration.GetConnectionString("DefaultConnection");
+             if (string.IsNullOrWhiteSpace(_connectionString))
+                throw new Exception("Connection string DefaultConnection não foi carregada.");
         }
 
         public async Task<(int id, string codigo)> InserirJogoAsync(InserirJogoDTO dto)

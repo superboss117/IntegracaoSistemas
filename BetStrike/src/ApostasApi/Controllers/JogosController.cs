@@ -10,13 +10,12 @@ namespace ApostasApi.Controllers
     [Route("api/[controller]")]
     public class JogosController : ControllerBase
     {
-        private readonly JogoService _service;
+        private readonly IJogoService _service;
 
-        public JogosController(JogoService service)
-        {
-            _service = service;
-        }
-
+public JogosController(IJogoService service)
+{
+    _service = service;
+}
         [HttpPost]
         public async Task<IActionResult> InserirJogo([FromBody] CriarJogoDto dto)
         {

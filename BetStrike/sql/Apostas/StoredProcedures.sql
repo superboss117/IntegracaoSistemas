@@ -352,3 +352,297 @@ BEGIN
     END CATCH
 END;
 GO
+
+
+
+CREATE OR ALTER PROCEDURE SP_Remover_Jogo
+    @Codigo_Jogo VARCHAR(20)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRANSACTION;
+
+    DECLARE @Jogo_Id INT, @Estado INT;
+
+    SELECT @Jogo_Id = Id, @Estado = Estado
+    FROM Jogo WHERE Codigo_Jogo = @Codigo_Jogo;
+
+    IF @Jogo_Id IS NULL
+    BEGIN
+        ROLLBACK TRANSACTION;
+        RAISERROR('Jogo não encontrado.', 16, 1);
+        RETURN;
+    END
+
+    IF @Estado <> 1
+    BEGIN
+        ROLLBACK TRANSACTION;
+        RAISERROR('Só é permitido remover jogos no estado Agendado.', 16, 1);
+        RETURN;
+    END
+
+    IF EXISTS (SELECT 1 FROM Aposta WHERE Jogo_Id = @Jogo_Id)
+    BEGIN
+        ROLLBACK TRANSACTION;
+        RAISERROR('Não é possível remover um jogo com apostas associadas.', 16, 1);
+        RETURN;
+    END
+
+    DELETE FROM Jogo WHERE Id = @Jogo_Id;
+
+    SELECT @Jogo_Id AS Id_Removido;
+
+    COMMIT TRANSACTION;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE SP_Listar_Apostas
+    @Utilizador_Id  INT      = NULL,
+    @Jogo_Id        INT      = NULL,
+    @Estado         INT      = NULL,
+    @Data_Inicio    DATETIME = NULL,
+    @Data_Fim       DATETIME = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        a.Id,
+        a.Utilizador_Id,
+        j.Codigo_Jogo,
+        j.Equipa_Casa,
+        j.Equipa_Fora,
+        a.Tipo_Aposta,
+        a.Montante,
+        a.Odd,
+        a.Montante * a.Odd      AS Premio_Potencial,
+        a.Estado,
+        a.Data_Hora
+    FROM Aposta a
+    JOIN Jogo j ON a.Jogo_Id = j.Id
+    WHERE
+        (@Utilizador_Id IS NULL OR a.Utilizador_Id = @Utilizador_Id) AND
+        (@Jogo_Id       IS NULL OR a.Jogo_Id       = @Jogo_Id)       AND
+        (@Estado        IS NULL OR a.Estado        = @Estado)        AND
+        (@Data_Inicio   IS NULL OR a.Data_Hora     >= @Data_Inicio)  AND
+        (@Data_Fim      IS NULL OR a.Data_Hora     <= @Data_Fim)
+    ORDER BY a.Data_Hora DESC;
+END;
+GO
+
+
+
+CREATE OR ALTER PROCEDURE SP_Obter_Aposta
+    @Aposta_Id INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM Aposta WHERE Id = @Aposta_Id)
+        THROW 50001, 'Aposta não encontrada.', 1;
+
+    SELECT
+        a.Id,
+        a.Utilizador_Id,
+        j.Codigo_Jogo,
+        j.Equipa_Casa,
+        j.Equipa_Fora,
+        j.Competicao,
+        j.Data_Hora             AS Data_Jogo,
+        a.Tipo_Aposta,
+        a.Montante,
+        a.Odd,
+        a.Montante * a.Odd      AS Premio_Potencial,
+        a.Estado,
+        a.Data_Hora             AS Data_Aposta
+    FROM Aposta a
+    JOIN Jogo j ON a.Jogo_Id = j.Id
+    WHERE a.Id = @Aposta_Id;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE SP_Obter_Resultado
+    @Codigo_Jogo VARCHAR(20)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @Jogo_Id INT;
+    SELECT @Jogo_Id = Id FROM Jogo WHERE Codigo_Jogo = @Codigo_Jogo;
+
+    IF @Jogo_Id IS NULL
+        THROW 50001, 'Jogo não encontrado.', 1;
+
+    IF NOT EXISTS (SELECT 1 FROM Resultado WHERE Jogo_Id = @Jogo_Id)
+        THROW 50002, 'Este jogo ainda não tem resultado registado.', 1;
+
+    SELECT
+        j.Codigo_Jogo,
+        j.Equipa_Casa,
+        j.Equipa_Fora,
+        r.Golos_Casa,
+        r.Golos_Fora,
+        r.Desconhecido,
+        r.Ultima_Atualizacao
+    FROM Resultado r
+    JOIN Jogo j ON r.Jogo_Id = j.Id
+    WHERE r.Jogo_Id = @Jogo_Id;
+END;
+GO
+
+
+
+CREATE OR ALTER PROCEDURE SP_Estatisticas_Jogo
+    @Codigo_Jogo VARCHAR(20)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @Jogo_Id INT;
+    SELECT @Jogo_Id = Id FROM Jogo WHERE Codigo_Jogo = @Codigo_Jogo;
+
+    IF @Jogo_Id IS NULL
+        THROW 50001, 'Jogo não encontrado.', 1;
+
+    SELECT
+        j.Codigo_Jogo,
+        j.Equipa_Casa,
+        j.Equipa_Fora,
+
+        -- Volume total
+        COUNT(a.Id)                                         AS Total_Apostas,
+        ISNULL(SUM(a.Montante), 0)                          AS Volume_Total,
+
+        -- Apostas por tipo
+        COUNT(CASE WHEN a.Tipo_Aposta = '1' THEN 1 END)    AS Apostas_Tipo_1,
+        COUNT(CASE WHEN a.Tipo_Aposta = 'X' THEN 1 END)    AS Apostas_Tipo_X,
+        COUNT(CASE WHEN a.Tipo_Aposta = '2' THEN 1 END)    AS Apostas_Tipo_2,
+
+        -- Apostas por estado
+        COUNT(CASE WHEN a.Estado = 1 THEN 1 END)            AS Apostas_Pendentes,
+        COUNT(CASE WHEN a.Estado = 2 THEN 1 END)            AS Apostas_Ganhas,
+        COUNT(CASE WHEN a.Estado = 3 THEN 1 END)            AS Apostas_Perdidas,
+        COUNT(CASE WHEN a.Estado = 4 THEN 1 END)            AS Apostas_Anuladas,
+
+        -- Margem da plataforma:
+        -- o que foi apostado menos o que foi pago em prémios
+        ISNULL(SUM(a.Montante), 0) -
+        ISNULL(SUM(CASE WHEN a.Estado = 2 THEN a.Montante * a.Odd ELSE 0 END), 0)
+                                                            AS Margem_Plataforma
+
+    FROM Jogo j
+    LEFT JOIN Aposta a ON a.Jogo_Id = j.Id
+    WHERE j.Id = @Jogo_Id
+    GROUP BY j.Id, j.Codigo_Jogo, j.Equipa_Casa, j.Equipa_Fora;
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE SP_Estatisticas_Competicao
+    @Competicao NVARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM Jogo WHERE Competicao = @Competicao)
+        THROW 50001, 'Competição não encontrada.', 1;
+
+    SELECT
+        j.Competicao,
+        COUNT(DISTINCT j.Id)                                AS Total_Jogos,
+
+        -- Média de golos por jogo (só jogos finalizados com resultado conhecido)
+        ISNULL(AVG(CAST(r.Golos_Casa + r.Golos_Fora AS FLOAT)), 0)
+                                                            AS Media_Golos_Por_Jogo,
+
+        -- Volume total apostado
+        ISNULL(SUM(a.Montante), 0)                          AS Volume_Total_Apostado,
+
+        -- Taxa de vitória de cada resultado (% dos jogos finalizados)
+        CAST(
+            COUNT(CASE WHEN r.Golos_Casa >  r.Golos_Fora THEN 1 END) * 100.0
+            / NULLIF(COUNT(CASE WHEN j.Estado = 3 THEN 1 END), 0)
+        AS DECIMAL(5,2))                                    AS Taxa_Vitoria_1,
+
+        CAST(
+            COUNT(CASE WHEN r.Golos_Casa =  r.Golos_Fora THEN 1 END) * 100.0
+            / NULLIF(COUNT(CASE WHEN j.Estado = 3 THEN 1 END), 0)
+        AS DECIMAL(5,2))                                    AS Taxa_Vitoria_X,
+
+        CAST(
+            COUNT(CASE WHEN r.Golos_Fora >  r.Golos_Casa THEN 1 END) * 100.0
+            / NULLIF(COUNT(CASE WHEN j.Estado = 3 THEN 1 END), 0)
+        AS DECIMAL(5,2))                                    AS Taxa_Vitoria_2
+
+    FROM Jogo j
+    LEFT JOIN Resultado r ON r.Jogo_Id = j.Id AND r.Desconhecido = 0
+    LEFT JOIN Aposta    a ON a.Jogo_Id = j.Id
+    WHERE j.Competicao = @Competicao
+    GROUP BY j.Competicao;
+END;
+GO
+
+
+USE Apostas;
+GO
+
+CREATE OR ALTER PROCEDURE SP_Listar_Jogos
+    @Data        DATE = NULL,
+    @Estado      INT = NULL,
+    @Competicao  NVARCHAR(100) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        Id,
+        Codigo_Jogo,
+        Data_Hora,
+        Equipa_Casa,
+        Equipa_Fora,
+        Competicao,
+        Estado
+    FROM Jogo
+    WHERE (@Data IS NULL OR CAST(Data_Hora AS DATE) = @Data)
+      AND (@Estado IS NULL OR Estado = @Estado)
+      AND (@Competicao IS NULL OR Competicao = @Competicao)
+    ORDER BY Data_Hora;
+END;
+GO
+
+USE Apostas;
+GO
+
+CREATE OR ALTER PROCEDURE SP_Obter_Jogo
+    @Codigo_Jogo VARCHAR(20)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM Jogo WHERE Codigo_Jogo = @Codigo_Jogo)
+        THROW 50001, 'Jogo não encontrado.', 1;
+
+    SELECT
+        j.Id,
+        j.Codigo_Jogo,
+        j.Data_Hora,
+        j.Equipa_Casa,
+        j.Equipa_Fora,
+        j.Competicao,
+        j.Estado,
+        COUNT(CASE WHEN a.Estado = 1 THEN 1 END) AS Apostas_Pendentes,
+        ISNULL(SUM(a.Montante), 0) AS Volume_Total_Apostado
+    FROM Jogo j
+    LEFT JOIN Aposta a ON a.Jogo_Id = j.Id
+    WHERE j.Codigo_Jogo = @Codigo_Jogo
+    GROUP BY
+        j.Id,
+        j.Codigo_Jogo,
+        j.Data_Hora,
+        j.Equipa_Casa,
+        j.Equipa_Fora,
+        j.Competicao,
+        j.Estado;
+END;
+GO
