@@ -1,0 +1,19 @@
+# Build results
+bin/
+obj/
+
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+
+# NuGet
+packages/
+*.nupkg
+
+
+# Environment / secrets
+appsettings.Development.json
+.env
+
+
