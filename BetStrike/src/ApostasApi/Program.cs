@@ -16,6 +16,8 @@ builder.Services.AddScoped<IApostaService, ApostaService>();
 builder.Services.AddScoped<IResultadoService, ResultadoService>();
 builder.Services.AddScoped<IUtilizadorService, UtilizadorService>();
 builder.Services.AddScoped<IEstatisticaService, EstatisticaService>();
+builder.Services.AddScoped<SincronizacaoService>();
+
 
 builder.Services.AddOpenApi();
 

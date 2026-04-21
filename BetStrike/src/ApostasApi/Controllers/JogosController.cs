@@ -23,7 +23,7 @@ public class JogosController : ControllerBase
     }
 
     [HttpPut("{codigoJogo}/estado-resultado")]
-    public async Task<IActionResult> Atualizar(string codigoJogo, [FromBody] AtualizarJogoDto dto)
+    public async Task<IActionResult> Atuaolha os serviquelizar(string codigoJogo, [FromBody] AtualizarJogoDto dto)
     {
         var result = await _service.AtualizarAsync(codigoJogo, dto);
         return result.Success ? Ok(result) : BadRequest(result);

@@ -4,6 +4,12 @@ namespace ApostasApi.DTOs.Utilizadores;
 
 public class CriarUtilizadorDto
 {
-    public int UtilizadorId { get; set; }
+    [Required]
+    [StringLength(100)]
     public string Nome { get; set; } = string.Empty;
+
+    [Required]
+    [EmailAddress]
+    [StringLength(150)]
+    public string Email { get; set; } = string.Empty;
 }

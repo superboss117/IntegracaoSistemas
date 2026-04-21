@@ -15,15 +15,29 @@ public class UtilizadorService : IUtilizadorService
         _db = db;
     }
 
-    public async Task<ApiResult<object>> CriarAsync(CriarUtilizadorDto dto)
+   public async Task<ApiResult<UtilizadorResponseDto>> CriarAsync(CriarUtilizadorDto dto)
     {
         var parameters = new List<IDataParameter>
-    {
-        new SqlParameter("@Utilizador_Id", dto.UtilizadorId),
-        new SqlParameter("@Nome", dto.Nome)
-    };
+        {
+            new SqlParameter("@Nome", dto.Nome),
+            new SqlParameter("@Email", dto.Email)
+        };
 
-    await _db.ExecuteAsync("SP_Criar_Utilizador", parameters);
-    return ApiResult<object>.Ok(null, "Utilizador criado com sucesso.");
+        var table = await _db.QueryAsync("SP_Criar_Utilizador", parameters);
+
+        if (table.Rows.Count == 0)
+            return ApiResult<UtilizadorResponseDto>.Fail("Não foi possível criar o utilizador.");
+
+        var row = table.Rows[0];
+
+        var response = new UtilizadorResponseDto
+        {
+            UtilizadorId = Convert.ToInt32(row["Utilizador_Id"]),
+            Nome = row["Nome"]?.ToString() ?? string.Empty,
+            Email = row["Email"]?.ToString() ?? string.Empty,
+            SaldoInicial = Convert.ToDecimal(row["Saldo_Inicial"])
+        };
+
+        return ApiResult<UtilizadorResponseDto>.Ok(response, "Utilizador criado com sucesso.");
     }
 }

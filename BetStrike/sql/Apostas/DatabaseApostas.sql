@@ -46,6 +46,8 @@ CREATE TABLE Aposta (
 
 
 CREATE TABLE Utilizador (
-    Id      INT PRIMARY KEY,
-    Nome    NVARCHAR(100) NOT NULL
+ Id              INT IDENTITY(1,1) PRIMARY KEY,
+     Nome        NVARCHAR(100)  NOT NULL,
+    Email       NVARCHAR(150)  NOT NULL UNIQUE,
+    Data_Criacao DATETIME      NOT NULL DEFAULT GETDATE()
 );

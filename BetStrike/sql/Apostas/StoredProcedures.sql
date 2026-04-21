@@ -285,31 +285,70 @@ GO
 
 
 CREATE OR ALTER PROCEDURE SP_Criar_Utilizador
-    @Utilizador_Id INT,
-    @Nome          NVARCHAR(100)
+    @Nome   NVARCHAR(100),
+    @Email  NVARCHAR(150)
 AS
 BEGIN
     SET NOCOUNT ON;
-    
+    SET XACT_ABORT ON;
+
     BEGIN TRY
         BEGIN TRANSACTION;
 
-        -- Criar saldo inicial (garantindo idempotência)
-        IF NOT EXISTS (SELECT 1 FROM Pagamentos.dbo.Saldo_Utilizador WHERE Utilizador_Id = @Utilizador_Id)
+        -- Validar dados
+        IF LTRIM(RTRIM(@Nome)) = ''
         BEGIN
-            INSERT INTO Pagamentos.dbo.Saldo_Utilizador (Utilizador_Id, Saldo, Ultima_Atualizacao)
-            VALUES (@Utilizador_Id, 50.00, GETDATE());
-
-            -- Registar depósito promocional
-            INSERT INTO Pagamentos.dbo.Transacao (Utilizador_Id, Tipo, Valor, Estado)
-            VALUES (@Utilizador_Id, 'DE', 50.00, 'Processada');
+            RAISERROR('Nome é obrigatório.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
         END
 
+        IF LTRIM(RTRIM(@Email)) = ''
+        BEGIN
+            RAISERROR('Email é obrigatório.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END
+
+        -- Evitar duplicados
+        IF EXISTS (SELECT 1 FROM Apostas.dbo.Utilizador WHERE Email = @Email)
+        BEGIN
+            RAISERROR('Já existe um utilizador com esse email.', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END
+
+        -- Inserir utilizador em Apostas
+        INSERT INTO Apostas.dbo.Utilizador (Nome, Email, Data_Criacao)
+        VALUES (@Nome, @Email, GETDATE());
+
+        DECLARE @Utilizador_Id INT = SCOPE_IDENTITY();
+
+        -- Inserir saldo inicial em Pagamentos
+        INSERT INTO Pagamentos.dbo.Saldo_Utilizador
+            (Utilizador_Id, Saldo, Ultima_Atualizacao)
+        VALUES
+            (@Utilizador_Id, 50.00, GETDATE());
+
+        -- Registar transação promocional
+        INSERT INTO Pagamentos.dbo.Transacao
+            (Aposta_Id, Utilizador_Id, Tipo, Valor, Data_Hora, Estado)
+        VALUES
+            (NULL, @Utilizador_Id, 'DE', 50.00, GETDATE(), 'Processada');
+
         COMMIT TRANSACTION;
+
+        SELECT
+            @Utilizador_Id AS Utilizador_Id,
+            @Nome AS Nome,
+            @Email AS Email,
+            50.00 AS Saldo_Inicial;
     END TRY
     BEGIN CATCH
-        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        THROW; -- Propaga o erro para quem chamou a procedure
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
     END CATCH
 END;
 GO

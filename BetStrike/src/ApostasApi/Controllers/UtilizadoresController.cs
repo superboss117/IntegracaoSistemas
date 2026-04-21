@@ -15,10 +15,14 @@ public class UtilizadoresController : ControllerBase
         _service = service;
     }
 
-    [HttpPost]
+ [HttpPost]
     public async Task<IActionResult> Criar([FromBody] CriarUtilizadorDto dto)
     {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
         var result = await _service.CriarAsync(dto);
+
         return result.Success ? Ok(result) : BadRequest(result);
     }
 }
