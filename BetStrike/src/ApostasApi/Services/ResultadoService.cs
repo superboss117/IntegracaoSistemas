@@ -18,14 +18,14 @@ public class ResultadoService : IResultadoService
     public async Task<ApiResult<object>> CriarAsync(CriarResultadoDto dto)
     {
         var parameters = new List<IDataParameter>
-        {
-            new SqlParameter("@CodigoJogo", dto.CodigoJogo),
-            new SqlParameter("@GolosCasa", dto.GolosCasa),
-            new SqlParameter("@GolosFora", dto.GolosFora)
-        };
+    {
+        new SqlParameter("@Codigo_Jogo", dto.CodigoJogo),
+        new SqlParameter("@Golos_Casa", dto.GolosCasa),
+        new SqlParameter("@Golos_Fora", dto.GolosFora)
+    };
 
-        await _db.ExecuteAsync("sp_Resultado_Inserir", parameters);
-        return ApiResult<object>.Ok(null, "Resultado inserido com sucesso.");
+    await _db.ExecuteAsync("SP_Inserir_Resultado", parameters);
+    return ApiResult<object>.Ok(null, "Resultado inserido com sucesso.");
     }
 
     public async Task<ApiResult<object>> ObterPorJogoAsync(string codigoJogo)

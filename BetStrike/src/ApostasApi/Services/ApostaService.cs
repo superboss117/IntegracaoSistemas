@@ -19,15 +19,15 @@ public class ApostaService : IApostaService
     {
         var parameters = new List<IDataParameter>
         {
-            new SqlParameter("@IdUtilizador", dto.IdUtilizador),
-            new SqlParameter("@CodigoJogo", dto.CodigoJogo),
-            new SqlParameter("@TipoAposta", dto.TipoAposta),
-            new SqlParameter("@ValorApostado", dto.ValorApostado),
-            new SqlParameter("@OddMomento", dto.OddMomento)
-        };
+           new SqlParameter("@Jogo_Id", dto.JogoId),
+        new SqlParameter("@Utilizador_Id", dto.UtilizadorId),
+        new SqlParameter("@Tipo_Aposta", dto.TipoAposta),
+        new SqlParameter("@Montante", dto.Montante),
+        new SqlParameter("@Odd", dto.Odd)
+    };
 
-        await _db.ExecuteAsync("sp_Aposta_Inserir", parameters);
-        return ApiResult<object>.Ok(null, "Aposta registada com sucesso.");
+    var table = await _db.QueryAsync("SP_Inserir_Aposta", parameters);
+    return ApiResult<object>.Ok(table, "Aposta registada com sucesso.");
     }
 
     public async Task<ApiResult<object>> ListarAsync(int? idUtilizador, string? codigoJogo, int? estado, DateTime? inicio, DateTime? fim)
@@ -63,7 +63,7 @@ public class ApostaService : IApostaService
             new SqlParameter("@IdAposta", id)
         };
 
-        await _db.ExecuteAsync("sp_Aposta_Cancelar", parameters);
-        return ApiResult<object>.Ok(null, "Aposta cancelada com sucesso.");
+        await _db.ExecuteAsync("SP_Cancelar_Aposta", parameters);
+    return ApiResult<object>.Ok(null, "Aposta cancelada com sucesso.");
     }
 }

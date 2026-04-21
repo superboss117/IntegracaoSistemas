@@ -18,12 +18,12 @@ public class UtilizadorService : IUtilizadorService
     public async Task<ApiResult<object>> CriarAsync(CriarUtilizadorDto dto)
     {
         var parameters = new List<IDataParameter>
-        {
-            new SqlParameter("@Nome", dto.Nome),
-            new SqlParameter("@Email", dto.Email)
-        };
+    {
+        new SqlParameter("@Utilizador_Id", dto.UtilizadorId),
+        new SqlParameter("@Nome", dto.Nome)
+    };
 
-        await _db.ExecuteAsync("sp_Utilizador_Criar", parameters);
-        return ApiResult<object>.Ok(null, "Utilizador criado com sucesso.");
+    await _db.ExecuteAsync("SP_Criar_Utilizador", parameters);
+    return ApiResult<object>.Ok(null, "Utilizador criado com sucesso.");
     }
 }

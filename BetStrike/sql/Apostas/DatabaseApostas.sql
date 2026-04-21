@@ -43,3 +43,9 @@ CREATE TABLE Aposta (
     CONSTRAINT FK_Aposta_Jogo FOREIGN KEY (Jogo_Id)
         REFERENCES Jogo(Id)
 );
+
+
+CREATE TABLE Utilizador (
+    Id      INT PRIMARY KEY,
+    Nome    NVARCHAR(100) NOT NULL
+);

@@ -23,34 +23,32 @@ public class JogoService : IJogoService
             return ApiResult<object>.Fail("Formato de código inválido. Use FUT-AAAA-JJNN.");
 
         var parameters = new List<IDataParameter>
-        {
-            new SqlParameter("@CodigoJogo", dto.CodigoJogo),
-            new SqlParameter("@DataJogo", dto.DataJogo.ToDateTime(TimeOnly.MinValue)),
-            new SqlParameter("@HoraInicio", dto.HoraInicio.ToString()),
-            new SqlParameter("@EquipaCasa", dto.EquipaCasa),
-            new SqlParameter("@EquipaFora", dto.EquipaFora),
-            new SqlParameter("@Competicao", dto.Competicao),
-            new SqlParameter("@EstadoJogo", dto.EstadoJogo)
-        };
-
-        await _db.ExecuteAsync("sp_Jogo_Inserir", parameters);
-        return ApiResult<object>.Ok(null, "Jogo criado com sucesso.");
-    }
-
-    public async Task<ApiResult<object>> AtualizarEstadoResultadoAsync(string codigoJogo, AtualizarEstadoResultadoJogoDto dto)
     {
-        var parameters = new List<IDataParameter>
-        {
-            new SqlParameter("@CodigoJogo", codigoJogo),
-            new SqlParameter("@EstadoJogo", dto.EstadoJogo),
-            new SqlParameter("@GolosCasa", dto.GolosCasa),
-            new SqlParameter("@GolosFora", dto.GolosFora)
-        };
+        new SqlParameter("@Codigo_Jogo", dto.CodigoJogo),
+        new SqlParameter("@Data_Hora", dto.DataHora),
+        new SqlParameter("@Equipa_Casa", dto.EquipaCasa),
+        new SqlParameter("@Equipa_Fora", dto.EquipaFora),
+        new SqlParameter("@Competicao", dto.Competicao),
+        new SqlParameter("@Estado", dto.Estado)
+    };
 
-        await _db.ExecuteAsync("sp_Jogo_AtualizarEstadoResultado", parameters);
-        return ApiResult<object>.Ok(null, "Jogo atualizado com sucesso.");
+    var table = await _db.QueryAsync("SP_Inserir_Jogo", parameters);
+    return ApiResult<object>.Ok(table, "Jogo criado com sucesso.");
     }
 
+public async Task<ApiResult<object>> AtualizarAsync(string codigoJogo, AtualizarJogoDto dto)
+{
+    var parameters = new List<IDataParameter>
+    {
+        new SqlParameter("@Codigo_Jogo", codigoJogo),
+        new SqlParameter("@Novo_Estado", dto.NovoEstado),
+        new SqlParameter("@Golos_Casa", (object?)dto.GolosCasa ?? DBNull.Value),
+        new SqlParameter("@Golos_Fora", (object?)dto.GolosFora ?? DBNull.Value)
+    };
+
+    await _db.ExecuteAsync("SP_Atualizar_Jogo", parameters);
+    return ApiResult<object>.Ok(null, "Jogo atualizado com sucesso.");
+}
     public async Task<ApiResult<object>> ListarAsync(DateOnly? data, int? estado, string? competicao)
     {
         var parameters = new List<IDataParameter>
