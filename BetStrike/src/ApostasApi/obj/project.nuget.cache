@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "qGXjqCtFgBo=",
+  "success": true,
+  "projectFilePath": "/home/shrek/utad/IntegracaoSistemas/BetStrike/src/ApostasApi/ApostasApi.csproj",
+  "expectedPackageFiles": [
+    "/home/shrek/.nuget/packages/microsoft.aspnetcore.openapi/10.0.4/microsoft.aspnetcore.openapi.10.0.4.nupkg.sha512",
+    "/home/shrek/.nuget/packages/microsoft.openapi/2.0.0/microsoft.openapi.2.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}
