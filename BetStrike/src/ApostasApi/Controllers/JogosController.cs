@@ -1,52 +1,93 @@
 using ApostasApi.DTOs.Jogos;
 using ApostasApi.Services;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Threading.Tasks;
 
-namespace ApostasApi.Controllers;
-
-[ApiController]
-[Route("api/[controller]")]
-public class JogosController : ControllerBase
+namespace ApostasApi.Controllers
 {
-    private readonly IJogoService _service;
-
-    public JogosController(IJogoService service)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class JogosController : ControllerBase
     {
-        _service = service;
-    }
+        private readonly JogoService _service;
 
-    [HttpPost]
-    public async Task<IActionResult> Criar([FromBody] CriarJogoDto dto)
-    {
-        var result = await _service.CriarAsync(dto);
-        return result.Success ? Ok(result) : BadRequest(result);
-    }
+        public JogosController(JogoService service)
+        {
+            _service = service;
+        }
 
-    [HttpPut("{codigoJogo}/estado-resultado")]
-    public async Task<IActionResult> Atuaolha os serviquelizar(string codigoJogo, [FromBody] AtualizarJogoDto dto)
-    {
-        var result = await _service.AtualizarAsync(codigoJogo, dto);
-        return result.Success ? Ok(result) : BadRequest(result);
-    }
+        [HttpPost]
+        public async Task<IActionResult> InserirJogo([FromBody] CriarJogoDto dto)
+        {
+            try
+            {
+                var result = await _service.CriarJogoAsync(dto);
+                return CreatedAtAction(nameof(ObterJogo), new { codigoJogo = dto.CodigoJogo }, result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { erro = ex.Message });
+            }
+        }
 
-    [HttpGet]
-    public async Task<IActionResult> Listar([FromQuery] DateOnly? data, [FromQuery] int? estado, [FromQuery] string? competicao)
-    {
-        var result = await _service.ListarAsync(data, estado, competicao);
-        return Ok(result);
-    }
+        [HttpPut("{codigoJogo}")]
+        public async Task<IActionResult> AtualizarJogo(string codigoJogo, [FromBody] AtualizarJogoDto dto)
+        {
+            try
+            {
+                await _service.AtualizarJogoAsync(codigoJogo, dto);
+                return Ok(new { mensagem = "Jogo atualizado com sucesso." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { erro = ex.Message });
+            }
+        }
 
-    [HttpGet("{codigoJogo}")]
-    public async Task<IActionResult> Obter(string codigoJogo)
-    {
-        var result = await _service.ObterAsync(codigoJogo);
-        return Ok(result);
-    }
+        [HttpGet]
+        public async Task<IActionResult> ListarJogos([FromQuery] DateTime? data, [FromQuery] int? estado, [FromQuery] string? competicao)
+        {
+            try
+            {
+                var jogos = await _service.ListarJogosAsync(data, estado, competicao);
+                return Ok(jogos);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { erro = ex.Message });
+            }
+        }
 
-    [HttpDelete("{codigoJogo}")]
-    public async Task<IActionResult> Remover(string codigoJogo)
-    {
-        var result = await _service.RemoverAsync(codigoJogo);
-        return result.Success ? Ok(result) : BadRequest(result);
+        [HttpGet("{codigoJogo}")]
+        public async Task<IActionResult> ObterJogo(string codigoJogo)
+        {
+            try
+            {
+                var jogo = await _service.ObterJogoAsync(codigoJogo);
+                if (jogo == null)
+                    return NotFound(new { erro = "Jogo não encontrado." });
+
+                return Ok(jogo);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { erro = ex.Message });
+            }
+        }
+
+        [HttpDelete("{codigoJogo}")]
+        public async Task<IActionResult> RemoverJogo(string codigoJogo)
+        {
+            try
+            {
+                await _service.RemoverJogoAsync(codigoJogo);
+                return Ok(new { mensagem = "Jogo removido com sucesso." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { erro = ex.Message });
+            }
+        }
     }
 }

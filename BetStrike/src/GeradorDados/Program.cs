@@ -9,7 +9,7 @@ var equipas = new List<string>
     "Estrela Amadora", "Nacional", "AVS"
 };
 
-const string BASE_URL = "https://localhost:7159";
+const string BASE_URL = "http://localhost:5000";
 const int NUMERO_JORNADA = 1;
 const int INTERVALO_SEGUNDOS = 10;
 

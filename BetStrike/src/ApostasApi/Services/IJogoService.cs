@@ -1,18 +1,13 @@
-using ApostasApi.DTOs.Apostas;
-using ApostasApi.DTOs.Estatisticas;
 using ApostasApi.DTOs.Jogos;
-using ApostasApi.DTOs.Resultados;
-using ApostasApi.DTOs.Utilizadores;
-using ApostasApi.Models;
 
-namespace ApostasApi.Services;
-
-public interface IJogoService
+namespace ApostasApi.Services
 {
-    Task<ApiResult<object>> CriarAsync(CriarJogoDto dto);
-    Task<ApiResult<object>> AtualizarAsync(string codigoJogo, AtualizarJogoDto dto);
-    Task<ApiResult<object>> ListarAsync(DateOnly? data, int? estado, string? competicao);
-    Task<ApiResult<object>> ObterAsync(string codigoJogo);
-    Task<ApiResult<object>> RemoverAsync(string codigoJogo);
+    public interface IJogoService
+    {
+        Task<object> CriarJogoAsync(CriarJogoDto dto);
+        Task AtualizarJogoAsync(string codigoJogo, AtualizarJogoDto dto);
+        Task<object> ListarJogosAsync(DateTime? data, int? estado, string? competicao);
+        Task<object?> ObterJogoAsync(string codigoJogo);
+        Task RemoverJogoAsync(string codigoJogo);
+    }
 }
-

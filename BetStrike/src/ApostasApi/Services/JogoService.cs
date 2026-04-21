@@ -1,14 +1,11 @@
 using ApostasApi.Data;
 using ApostasApi.DTOs.Jogos;
 using Microsoft.Data.SqlClient;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Threading.Tasks;
 
 namespace ApostasApi.Services
 {
-    public class JogoService
+    public class JogoService : IJogoService
     {
         private readonly IDbExecutor _db;
 
@@ -29,8 +26,7 @@ namespace ApostasApi.Services
                 new SqlParameter("@Estado", dto.Estado)
             };
 
-            var result = await _db.QueryAsync("SP_Inserir_Jogo", parameters);
-            return result;
+            return await _db.QueryAsync("SP_Inserir_Jogo", parameters);
         }
 
         public async Task AtualizarJogoAsync(string codigoJogo, AtualizarJogoDto dto)
