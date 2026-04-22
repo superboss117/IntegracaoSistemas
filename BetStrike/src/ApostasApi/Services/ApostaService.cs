@@ -19,29 +19,46 @@ public class ApostaService : IApostaService
     {
         var parameters = new List<IDataParameter>
         {
-           new SqlParameter("@Jogo_Id", dto.JogoId),
-        new SqlParameter("@Utilizador_Id", dto.UtilizadorId),
-        new SqlParameter("@Tipo_Aposta", dto.TipoAposta),
-        new SqlParameter("@Montante", dto.Montante),
-        new SqlParameter("@Odd", dto.Odd)
-    };
+            new SqlParameter("@Jogo_Id", dto.JogoId),
+            new SqlParameter("@Utilizador_Id", dto.UtilizadorId),
+            new SqlParameter("@Tipo_Aposta", dto.TipoAposta),
+            new SqlParameter("@Montante", dto.Montante),
+            new SqlParameter("@Odd", dto.Odd)
+        };
 
-    var table = await _db.QueryAsync("SP_Inserir_Aposta", parameters);
-    return ApiResult<object>.Ok(table, "Aposta registada com sucesso.");
+        var table = await _db.QueryAsync("SP_Inserir_Aposta", parameters);
+        return ApiResult<object>.Ok(table, "Aposta registada com sucesso.");
     }
 
     public async Task<ApiResult<object>> ListarAsync(int? idUtilizador, string? codigoJogo, int? estado, DateTime? inicio, DateTime? fim)
     {
+        int? jogoId = null;
+
+        if (!string.IsNullOrWhiteSpace(codigoJogo))
+        {
+            var jogoParams = new List<IDataParameter>
+            {
+                new SqlParameter("@Codigo_Jogo", codigoJogo)
+            };
+
+            var jogoTable = await _db.QueryAsync("SP_Obter_Jogo", jogoParams);
+
+            if (jogoTable.Rows.Count == 0)
+                return ApiResult<object>.Fail("Jogo não encontrado.");
+
+            jogoId = Convert.ToInt32(jogoTable.Rows[0]["Id"]);
+        }
+
         var parameters = new List<IDataParameter>
         {
-            new SqlParameter("@IdUtilizador", idUtilizador ?? (object)DBNull.Value),
-            new SqlParameter("@CodigoJogo", codigoJogo ?? (object)DBNull.Value),
-            new SqlParameter("@EstadoAposta", estado ?? (object)DBNull.Value),
-            new SqlParameter("@DataInicio", inicio ?? (object)DBNull.Value),
-            new SqlParameter("@DataFim", fim ?? (object)DBNull.Value)
+            new SqlParameter("@Utilizador_Id", (object?)idUtilizador ?? DBNull.Value),
+            new SqlParameter("@Jogo_Id", (object?)jogoId ?? DBNull.Value),
+            new SqlParameter("@Estado", (object?)estado ?? DBNull.Value),
+            new SqlParameter("@Data_Inicio", (object?)inicio ?? DBNull.Value),
+            new SqlParameter("@Data_Fim", (object?)fim ?? DBNull.Value)
         };
 
-        var table = await _db.QueryAsync("sp_Aposta_Listar", parameters);
+        var table = await _db.QueryAsync("SP_Listar_Apostas", parameters);
         return ApiResult<object>.Ok(table, "Apostas obtidas com sucesso.");
     }
 
@@ -49,10 +66,10 @@ public class ApostaService : IApostaService
     {
         var parameters = new List<IDataParameter>
         {
-            new SqlParameter("@IdAposta", id)
+            new SqlParameter("@Aposta_Id", id)
         };
 
-        var table = await _db.QueryAsync("sp_Aposta_ObterPorId", parameters);
+        var table = await _db.QueryAsync("SP_Obter_Aposta", parameters);
         return ApiResult<object>.Ok(table, "Aposta obtida com sucesso.");
     }
 
@@ -60,10 +77,10 @@ public class ApostaService : IApostaService
     {
         var parameters = new List<IDataParameter>
         {
-            new SqlParameter("@IdAposta", id)
+            new SqlParameter("@Aposta_Id", id)
         };
 
         await _db.ExecuteAsync("SP_Cancelar_Aposta", parameters);
-    return ApiResult<object>.Ok(null, "Aposta cancelada com sucesso.");
+        return ApiResult<object>.Ok(null, "Aposta cancelada com sucesso.");
     }
 }

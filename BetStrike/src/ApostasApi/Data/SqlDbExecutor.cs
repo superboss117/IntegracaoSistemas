@@ -9,7 +9,7 @@ public class SqlDbExecutor : IDbExecutor
 
     public SqlDbExecutor(IConfiguration configuration)
     {
-        _connectionString = configuration.GetConnectionString("ApostasDb")
+        _connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string 'ApostasDb' não encontrada.");
     }
 

@@ -16,16 +16,15 @@ builder.Services.AddScoped<IEstatisticaService, EstatisticaService>();
 
 builder.Services.AddHttpClient<SincronizacaoService>(client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5000/");
+    client.BaseAddress = new Uri("http://resultadosapi:8080/");
 });
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
+
     app.UseSwagger();
     app.UseSwaggerUI();
-}
+
 
 app.UseHttpsRedirection();
 app.UseAuthorization();

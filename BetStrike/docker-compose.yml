@@ -1,0 +1,58 @@
+services:
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "YourStrong@Pass123"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong@Pass123' -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  sql-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sql-init
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    volumes:
+      - ./sql:/sql
+    entrypoint: ["/bin/bash", "/sql/init-all.sh"]
+    restart: "no"
+
+  resultadosapi:
+    build:
+      context: .
+      dockerfile: ./src/ResultadosApi/Dockerfile
+    container_name: resultadosapi
+    depends_on:
+      sql-init:
+        condition: service_completed_successfully
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=Resultados;User Id=sa;Password=YourStrong@Pass123;TrustServerCertificate=True;"
+    ports:
+      - "5001:8080"
+
+  apostasapi:
+    build:
+      context: .
+      dockerfile: ./src/ApostasApi/Dockerfile
+    container_name: apostasapi
+    depends_on:
+      sql-init:
+        condition: service_completed_successfully
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=Apostas;User Id=sa;Password=YourStrong@Pass123;TrustServerCertificate=True;"
+    ports:
+      - "5002:8080"
+
+volumes:
+  sql_data:
