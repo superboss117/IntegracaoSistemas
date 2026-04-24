@@ -1,5 +1,3 @@
-using System;
-
 namespace ResultadosAPI.DTOs
 {
     public class InserirJogoDTO
