@@ -1,5 +1,7 @@
 using ApostasApi.Services;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Threading.Tasks;
 
 namespace ApostasApi.Controllers;
 
@@ -17,14 +19,28 @@ public class EstatisticasController : ControllerBase
     [HttpGet("jogo/{codigoJogo}")]
     public async Task<IActionResult> ObterPorJogo(string codigoJogo)
     {
-        var result = await _service.ObterPorJogoAsync(codigoJogo);
-        return result.Success ? Ok(result) : NotFound(result);
+        try
+        {
+            var result = await _service.ObterPorJogoAsync(codigoJogo);
+            return result.Success ? Ok(result) : NotFound(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { erro = ex.Message });
+        }
     }
 
     [HttpGet("competicao/{competicao}")]
     public async Task<IActionResult> ObterPorCompeticao(string competicao)
     {
-        var result = await _service.ObterPorCompeticaoAsync(competicao);
-        return result.Success ? Ok(result) : NotFound(result);
+        try
+        {
+            var result = await _service.ObterPorCompeticaoAsync(competicao);
+            return result.Success ? Ok(result) : NotFound(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { erro = ex.Message });
+        }
     }
 }

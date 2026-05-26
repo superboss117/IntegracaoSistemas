@@ -28,6 +28,98 @@ services:
     entrypoint: ["/bin/bash", "/sql/init-all.sh"]
     restart: "no"
 
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:latest
+    container_name: redpanda
+    command:
+      - redpanda
+      - start
+      - --smp 1
+      - --memory 1G
+      - --reserve-memory 0M
+      - --overprovisioned
+      - --node-id 0
+      - --kafka-addr PLAINTEXT://0.0.0.0:9092,OUTSIDE://0.0.0.0:29092
+      - --advertise-kafka-addr PLAINTEXT://redpanda:9092,OUTSIDE://localhost:9092
+      - --pandaproxy-addr 0.0.0.0:8082
+      - --advertise-pandaproxy-addr redpanda:8082
+    ports:
+      - "9092:29092"
+      - "8082:8082"
+      - "9644:9644"
+
+  redpanda-console:
+    image: docker.redpanda.com/redpandadata/console:latest
+    container_name: redpanda-console
+    depends_on:
+      - redpanda
+    environment:
+      - KAFKA_BROKERS=redpanda:9092
+    ports:
+      - "8080:8080"
+
+  eventlogger:
+    build:
+      context: .
+      dockerfile: ./src/EventLoggerWorker/Dockerfile
+    container_name: eventlogger
+    depends_on:
+      redpanda:
+        condition: service_started
+    environment:
+      Kafka__BootstrapServers: "redpanda:9092"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: "guest"
+      RABBITMQ_DEFAULT_PASS: "guest"
+
+  workersrabbitmq:
+    build:
+      context: .
+      dockerfile: ./src/WorkersRabbitMq/Dockerfile
+    container_name: workersrabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_started
+    environment:
+      RabbitMq__HostName: "rabbitmq"
+
+  analyticsworker:
+    build:
+      context: .
+      dockerfile: ./src/AnalyticsWorker/Dockerfile
+    container_name: analyticsworker
+    depends_on:
+      sql-init:
+        condition: service_completed_successfully
+      redpanda:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+    environment:
+      ConnectionStrings__AnalyticsConnection: "Server=sqlserver,1433;Database=Analytics;User Id=sa;Password=YourStrong@Pass123;TrustServerCertificate=True;"
+      Kafka__BootstrapServers: "redpanda:9092"
+      RabbitMq__HostName: "rabbitmq"
+
+  analyticsapi:
+    build:
+      context: .
+      dockerfile: ./src/AnalyticsApi/Dockerfile
+    container_name: analyticsapi
+    depends_on:
+      sql-init:
+        condition: service_completed_successfully
+    environment:
+      ConnectionStrings__AnalyticsConnection: "Server=sqlserver,1433;Database=Analytics;User Id=sa;Password=YourStrong@Pass123;TrustServerCertificate=True;"
+    ports:
+      - "5003:8080"
+
   resultadosapi:
     build:
       context: .
@@ -36,8 +128,11 @@ services:
     depends_on:
       sql-init:
         condition: service_completed_successfully
+      redpanda:
+        condition: service_started
     environment:
       ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=Resultados;User Id=sa;Password=YourStrong@Pass123;TrustServerCertificate=True;"
+      Kafka__BootstrapServers: "redpanda:9092"
     ports:
       - "5001:8080"
 
@@ -49,8 +144,13 @@ services:
     depends_on:
       sql-init:
         condition: service_completed_successfully
+      redpanda:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
     environment:
       ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=Apostas;User Id=sa;Password=YourStrong@Pass123;TrustServerCertificate=True;"
+      Kafka__BootstrapServers: "redpanda:9092"
     ports:
       - "5002:8080"
 

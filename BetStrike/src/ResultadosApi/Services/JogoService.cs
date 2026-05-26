@@ -2,16 +2,21 @@ using Microsoft.Data.SqlClient;
 using ResultadosAPI.DTOs;
 using System.Data;
 
+using Shared.Events.Models;
+using Shared.Events.Services;
+
 namespace ResultadosAPI.Services
 {
     public class JogoService
     {
         private readonly string _connectionString;
+        private readonly IEventPublisher _eventPublisher;
 
-        public JogoService(IConfiguration configuration)
+        public JogoService(IConfiguration configuration, IEventPublisher eventPublisher)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection")
                 ?? throw new Exception("Connection string DefaultConnection não foi carregada.");
+            _eventPublisher = eventPublisher;
         }
 
         public async Task<(int id, string codigo)> InserirJogoAsync(InserirJogoDTO dto)
@@ -43,10 +48,25 @@ namespace ResultadosAPI.Services
 
             if (await reader.ReadAsync())
             {
-                return (
-                    Convert.ToInt32(reader["Id_Inserido"]),
-                    reader["Codigo_Jogo"].ToString()!
-                );
+                var id = Convert.ToInt32(reader["Id_Inserido"]);
+                var codigo = reader["Codigo_Jogo"].ToString()!;
+
+                var jogoCriado = new JogoCriadoEvent
+                {
+                    CodigoJogo = codigo,
+                    EquipaCasa = dto.Equipa_Casa,
+                    EquipaFora = dto.Equipa_Fora,
+                    DataHora = dto.Data_Jogo.Date.Add(dto.Hora_Inicio)
+                };
+
+                await _eventPublisher.PublishAsync("jogos-events", new EventEnvelope<JogoCriadoEvent>
+                {
+                    EventType = nameof(JogoCriadoEvent),
+                    Source = "ResultadosApi",
+                    Payload = jogoCriado
+                });
+
+                return (id, codigo);
             }
 
             throw new Exception("Erro ao inserir jogo.");
@@ -66,6 +86,38 @@ namespace ResultadosAPI.Services
 
             await conn.OpenAsync();
             await cmd.ExecuteNonQueryAsync();
+
+            if (dto.Novo_Estado == 3) // Assume 3 is finished
+            {
+                var jogoFinalizado = new JogoFinalizadoEvent
+                {
+                    CodigoJogo = codigoJogo,
+                    GolosCasa = dto.Golos_Casa,
+                    GolosFora = dto.Golos_Fora
+                };
+
+                await _eventPublisher.PublishAsync("jogos-events", new EventEnvelope<JogoFinalizadoEvent>
+                {
+                    EventType = nameof(JogoFinalizadoEvent),
+                    Source = "ResultadosApi",
+                    Payload = jogoFinalizado
+                });
+            }
+            else
+            {
+                var jogoAtualizado = new JogoAtualizadoEvent
+                {
+                    CodigoJogo = codigoJogo,
+                    Estado = dto.Novo_Estado
+                };
+
+                await _eventPublisher.PublishAsync("jogos-events", new EventEnvelope<JogoAtualizadoEvent>
+                {
+                    EventType = nameof(JogoAtualizadoEvent),
+                    Source = "ResultadosApi",
+                    Payload = jogoAtualizado
+                });
+            }
         }
 
         public async Task<List<JogoRespostaDTO>> ListarJogosAsync(DateTime? data, int? estado)

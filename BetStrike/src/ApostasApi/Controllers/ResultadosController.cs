@@ -1,6 +1,8 @@
 using ApostasApi.DTOs.Resultados;
 using ApostasApi.Services;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Threading.Tasks;
 
 namespace ApostasApi.Controllers;
 
@@ -18,14 +20,28 @@ public class ResultadosController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Criar([FromBody] CriarResultadoDto dto)
     {
-        var result = await _service.CriarAsync(dto);
-        return result.Success ? Ok(result) : BadRequest(result);
+        try
+        {
+            var result = await _service.CriarAsync(dto);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { erro = ex.Message });
+        }
     }
 
     [HttpGet("{codigoJogo}")]
     public async Task<IActionResult> Obter(string codigoJogo)
     {
-        var result = await _service.ObterPorJogoAsync(codigoJogo);
-        return Ok(result);
+        try
+        {
+            var result = await _service.ObterPorJogoAsync(codigoJogo);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { erro = ex.Message });
+        }
     }
 }

@@ -1,0 +1,32 @@
+CREATE DATABASE Analytics;
+GO
+USE Analytics;
+GO
+
+CREATE TABLE EventosProcessados (
+    EventId UNIQUEIDENTIFIER PRIMARY KEY,
+    EventType NVARCHAR(100) NOT NULL,
+    ProcessedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    ConsumerName NVARCHAR(100) NOT NULL
+);
+
+CREATE TABLE MetricasJogo (
+    CodigoJogo NVARCHAR(50) PRIMARY KEY,
+    VolumeApostado DECIMAL(18, 2) NOT NULL DEFAULT 0,
+    NumeroApostas INT NOT NULL DEFAULT 0,
+    Exposicao DECIMAL(18, 2) NOT NULL DEFAULT 0
+);
+
+CREATE TABLE MetricasApostasPorMinuto (
+    Minuto DATETIME PRIMARY KEY,
+    VolumeApostado DECIMAL(18, 2) NOT NULL DEFAULT 0,
+    NumeroApostas INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE Alertas (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Tipo NVARCHAR(100) NOT NULL,
+    Nivel NVARCHAR(50) NOT NULL,
+    Detalhes NVARCHAR(MAX) NOT NULL,
+    DataHora DATETIME NOT NULL DEFAULT GETDATE()
+);

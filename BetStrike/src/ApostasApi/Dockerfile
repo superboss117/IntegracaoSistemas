@@ -2,6 +2,8 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY src/ApostasApi/*.csproj src/ApostasApi/
+COPY src/Shared.Events/*.csproj src/Shared.Events/
+COPY src/Shared.Messaging/*.csproj src/Shared.Messaging/
 RUN dotnet restore src/ApostasApi/ApostasApi.csproj
 
 COPY . .

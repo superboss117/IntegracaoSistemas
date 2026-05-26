@@ -26,4 +26,7 @@ echo "-> Apostas - stored procedures"
 echo "-> Apostas - triggers"
 /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P 'YourStrong@Pass123' -C -i /sql/Apostas/Trigger_mudanca_estado.sql
 
+echo "-> Analytics"
+/opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P 'YourStrong@Pass123' -C -i /sql/Analytics/Database_Analytics.sql
+
 echo "Scripts executados com sucesso."

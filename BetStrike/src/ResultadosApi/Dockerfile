@@ -2,6 +2,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY src/ResultadosApi/*.csproj src/ResultadosApi/
+COPY src/Shared.Events/*.csproj src/Shared.Events/
 RUN dotnet restore src/ResultadosApi/ResultadosApi.csproj
 
 COPY . .

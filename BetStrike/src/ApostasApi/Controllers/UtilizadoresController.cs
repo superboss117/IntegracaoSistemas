@@ -1,6 +1,8 @@
 using ApostasApi.DTOs.Utilizadores;
 using ApostasApi.Services;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Threading.Tasks;
 
 namespace ApostasApi.Controllers;
 
@@ -15,14 +17,20 @@ public class UtilizadoresController : ControllerBase
         _service = service;
     }
 
- [HttpPost]
+    [HttpPost]
     public async Task<IActionResult> Criar([FromBody] CriarUtilizadorDto dto)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var result = await _service.CriarAsync(dto);
-
-        return result.Success ? Ok(result) : BadRequest(result);
+        try
+        {
+            var result = await _service.CriarAsync(dto);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { erro = ex.Message });
+        }
     }
 }

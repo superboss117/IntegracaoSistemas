@@ -3,7 +3,8 @@
 set -u
 
 BASE_URL="http://localhost:5001"
-CODIGO_JOGO="FUT-2026-0001"
+UNIQUE_ID=$(printf "%04d" $((RANDOM % 10000)))
+CODIGO_JOGO="FUT-2026-${UNIQUE_ID}"
 
 DATA_JOGO="2026-04-23T00:00:00"
 HORA_INICIO="15:30:00"
@@ -68,6 +69,19 @@ echo
 echo "4) Obter jogo por código"
 request "GET" "$BASE_URL/api/Jogos/$CODIGO_JOGO"
 
+# 4.5) Atualizar jogo para Em Curso (Estado 2)
+PUT_BODY_CURSO=$(cat <<EOF
+{
+  "novo_Estado": 2,
+  "golos_Casa": 0,
+  "golos_Fora": 0
+}
+EOF
+)
+echo
+echo "4.5) Atualizar jogo para Em Curso"
+request "PUT" "$BASE_URL/api/Jogos/$CODIGO_JOGO" "$PUT_BODY_CURSO"
+
 # 5) Atualizar jogo
 PUT_BODY=$(cat <<EOF
 {
@@ -79,7 +93,7 @@ EOF
 )
 
 echo
-echo "5) Atualizar jogo"
+echo "5) Atualizar jogo para Finalizado"
 request "PUT" "$BASE_URL/api/Jogos/$CODIGO_JOGO" "$PUT_BODY"
 
 # 6) Obter jogo atualizado
@@ -87,15 +101,30 @@ echo
 echo "6) Obter jogo atualizado"
 request "GET" "$BASE_URL/api/Jogos/$CODIGO_JOGO"
 
-# 7) Apagar jogo
+# 7) Apagar jogo (Falha esperada - Jogo não está Agendado)
 echo
-echo "7) Apagar jogo"
+echo "7) Apagar jogo (deverá falhar com 400)"
 request "DELETE" "$BASE_URL/api/Jogos/$CODIGO_JOGO"
 
-# 8) Confirmar se foi apagado
+# 7.5) Inserir jogo temporário para testar remoção
+POST_BODY_TEMP=$(cat <<EOF
+{
+  "codigo_Jogo": "FUT-2026-9999",
+  "data_Jogo": "$DATA_JOGO",
+  "hora_Inicio": "$HORA_INICIO",
+  "equipa_Casa": "TempCasa",
+  "equipa_Fora": "TempFora"
+}
+EOF
+)
 echo
-echo "8) Confirmar remoção"
-request "GET" "$BASE_URL/api/Jogos/$CODIGO_JOGO"
+echo "7.5) Inserir jogo temporário para testar remoção"
+request "POST" "$BASE_URL/api/Jogos" "$POST_BODY_TEMP"
+
+# 8) Apagar jogo temporário
+echo
+echo "8) Apagar jogo temporário (deverá ter sucesso)"
+request "DELETE" "$BASE_URL/api/Jogos/FUT-2026-9999"
 
 echo
 echo "Teste concluído."

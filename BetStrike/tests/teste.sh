@@ -4,7 +4,8 @@ set -o pipefail
 
 BASE_URL="${1:-http://localhost:5002}"
 
-CODIGO_JOGO="FUT-2026-0001"
+UNIQUE_ID=$(printf "%04d" $((RANDOM % 10000)))
+CODIGO_JOGO="FUT-2026-${UNIQUE_ID}"
 DATA_HORA="2026-04-23T15:30:00"
 COMPETICAO="Liga Portugal"
 
@@ -273,9 +274,9 @@ section "20) Confirmar aposta após cancelamento"
 do_request "GET" "$BASE_URL/api/Apostas/${APOSTA_ID:-1}"
 
 #
-# 21) Apagar jogo
+# 21) Apagar jogo (Falha esperada)
 #
-section "21) Apagar jogo"
+section "21) Apagar jogo (deverá falhar pois não está agendado)"
 do_request "DELETE" "$BASE_URL/api/Jogos/$CODIGO_JOGO"
 
 section "Fim dos testes"
