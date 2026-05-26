@@ -10,7 +10,7 @@ var equipas = new List<string>
 };
 
 const string BASE_URL = "http://localhost:5001";
-const int NUMERO_JORNADA = 1;
+const int NUMERO_JORNADA = 5;
 const int INTERVALO_SEGUNDOS = 10;
 
 var handler = new HttpClientHandler
@@ -102,7 +102,7 @@ async Task SimularJogoAsync(string codigo, string casa, string fora)
     int golosFora = 0;
     int passosSimulacao = 9;
 
-    var updateInicialOk = await AtualizarJogoAsync(codigo, 2, golosCasa, golosFora);
+    var updateInicialOk = await AtualizarJogoAsync(codigo, , golosCasa, golosFora);
 
     if (!updateInicialOk)
     {
@@ -122,7 +122,7 @@ async Task SimularJogoAsync(string codigo, string casa, string fora)
         if (rnd.NextDouble() < 0.15)
             golosFora++;
 
-        var updateOk = await AtualizarJogoAsync(codigo, 2, golosCasa, golosFora);
+        var updateOk = await AtualizarJogoAsync(codigo, 1, golosCasa, golosFora);
 
         if (!updateOk)
         {
@@ -133,7 +133,7 @@ async Task SimularJogoAsync(string codigo, string casa, string fora)
         Console.WriteLine($"[{codigo}] Min {(passo + 1) * 10}: {casa} {golosCasa}-{golosFora} {fora}");
     }
 
-    var finalOk = await AtualizarJogoAsync(codigo, 3, golosCasa, golosFora);
+    var finalOk = await AtualizarJogoAsync(codigo, 2, golosCasa, golosFora);
 
     if (finalOk)
         Console.WriteLine($"[{codigo}] FINALIZADO: {casa} {golosCasa}-{golosFora} {fora}");

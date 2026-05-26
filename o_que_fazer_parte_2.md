@@ -151,6 +151,37 @@ SaldoAtualizado
 AlertaGerado
 ```
 
+### Exemplo de evento `ApostaCriada`
+
+```json
+{
+  "eventId": "8b5a9b2e-4e20-4cb4-a835-123456789abc",
+  "eventType": "ApostaCriada",
+  "timestamp": "2026-05-22T15:30:00Z",
+  "apostaId": 12,
+  "jogoCodigo": "FUT-2026-0103",
+  "utilizadorId": 4,
+  "tipoAposta": "1",
+  "valor": 20.00,
+  "odd": 1.85
+}
+```
+
+### Exemplo de evento `JogoFinalizado`
+
+```json
+{
+  "eventId": "4dcf0c3d-c2e6-41f3-a1aa-987654321abc",
+  "eventType": "JogoFinalizado",
+  "timestamp": "2026-05-22T16:00:00Z",
+  "jogoCodigo": "FUT-2026-0103",
+  "equipaCasa": "Benfica",
+  "equipaFora": "Porto",
+  "golosCasa": 2,
+  "golosFora": 1,
+  "estado": 3
+}
+```
 
 ---
 
@@ -568,6 +599,58 @@ Responsável pela componente visível e pela integração final.
 - Docker Compose completo;
 - Prints dos testes;
 - Relatório final integrado.
+
+---
+
+## 16. Prioridades se houver pouco tempo
+
+Se o tempo for limitado, implementar por esta ordem:
+
+```text
+1. Publicar eventos de jogos e apostas em Kafka/Redpanda.
+2. Criar RabbitMQ com uma fila de notificações.
+3. Criar Dead Letter Queue.
+4. Criar AnalyticsWorker para calcular volume apostado por jogo.
+5. Criar dashboard simples com 4 ou 5 métricas.
+6. Criar pelo menos um alerta automático.
+7. Criar Docker Compose.
+8. Fazer testes com prints.
+```
+
+O mínimo aceitável para demonstrar a Parte 2 deve incluir:
+
+- Uma fila RabbitMQ funcional;
+- Um tópico Kafka/Redpanda funcional;
+- Um producer de eventos;
+- Um consumer de eventos;
+- Um worker assíncrono;
+- Um dashboard ou API de métricas;
+- Um alerta automático;
+- Um teste de falha/retry/reprocessamento;
+- Execução com Docker Compose.
+
+---
+
+## 17. Estrutura sugerida para o relatório
+
+```text
+1. Introdução
+2. Evolução da arquitetura da Parte 1 para a Parte 2
+3. Arquitetura lógica da solução
+4. Justificação da escolha das tecnologias
+   4.1. RabbitMQ
+   4.2. Kafka/Redpanda
+5. Camada de filas de mensagens
+6. Camada de streaming de eventos
+7. Eventos produzidos e consumidos
+8. Fluxos principais e assíncronos
+9. Dashboard, alertas e analytics
+10. Reprocessamento, retries e tolerância a falhas
+11. Testes realizados
+12. Containerização com Docker Compose
+13. Limitações
+14. Conclusão
+```
 
 ---
 
