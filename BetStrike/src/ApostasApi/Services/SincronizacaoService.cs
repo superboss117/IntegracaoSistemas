@@ -19,7 +19,11 @@ namespace ApostasApi.Services
 
         public async Task SincronizarJogoAsync(string codigoJogo)
         {
-            var jogoExterno = await _httpClient.GetFromJsonAsync<JogoResultadosDto>($"api/jogos/{codigoJogo}");
+            var options = new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+            var jogoExterno = await _httpClient.GetFromJsonAsync<JogoResultadosDto>($"api/jogos/{codigoJogo}", options);
 
             if (jogoExterno == null)
                 throw new Exception("Jogo não encontrado na Plataforma de Resultados.");

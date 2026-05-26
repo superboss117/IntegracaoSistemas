@@ -77,12 +77,19 @@ namespace ApostasApi.Services
                 new SqlParameter("@Codigo_Jogo", codigoJogo)
             };
 
-            var result = await _db.QueryAsync("SP_Obter_Jogo", parameters);
+            try
+            {
+                var result = await _db.QueryAsync("SP_Obter_Jogo", parameters);
 
-            if (result.Rows.Count == 0)
+                if (result.Rows.Count == 0)
+                    return null;
+
+                return MapRowToJogoDto(result.Rows[0]);
+            }
+            catch (SqlException ex) when (ex.Message.Contains("Jogo não encontrado"))
+            {
                 return null;
-
-            return MapRowToJogoDto(result.Rows[0]);
+            }
         }
 
         public async Task RemoverJogoAsync(string codigoJogo)

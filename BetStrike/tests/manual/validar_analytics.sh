@@ -94,9 +94,18 @@ if [ -z "$WORKER_LOGS" ]; then
 fi
 print_ok "Mensagem de alerta processada no RabbitMQ Worker"
 
+print_step "9. Validando Alerta no Kafka (alertas-events)"
+KAFKA_ALERTA=$(timeout 10 docker exec redpanda rpk topic consume alertas-events -f '%v\n' 2>/dev/null | grep -i "EXPOSICAO_ELEVADA" || true)
+if [ -z "$KAFKA_ALERTA" ]; then
+    print_err "AlertaGeradoEvent não foi encontrado no Redpanda (alertas-events)."
+    exit 1
+fi
+print_ok "Evento de alerta publicado no Kafka com sucesso."
+
 print_step "Resultado Final"
 echo -e "\033[1;32m[OK] AnalyticsWorker leu os tópicos Kafka."
 echo -e "[OK] Dashboard atualizou métricas de negócio em tempo real."
 echo -e "[OK] Alerta EXPOSICAO_ELEVADA foi ativado."
 echo -e "[OK] Alerta foi reencaminhado via RabbitMQ."
+echo -e "[OK] Alerta foi publicado no Kafka (alertas-events)."
 echo -e "\nSISTEMA ANALYTICS VALIDADO COM SUCESSO!\033[0m"

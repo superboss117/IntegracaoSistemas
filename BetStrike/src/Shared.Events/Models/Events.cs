@@ -51,3 +51,11 @@ public class ApostaCanceladaEvent
 {
     public int ApostaId { get; set; }
 }
+
+public class AlertaGeradoEvent
+{
+    public string Tipo { get; set; } = string.Empty;
+    public string Nivel { get; set; } = string.Empty;
+    public string Detalhes { get; set; } = string.Empty;
+    public DateTime DataHora { get; set; }
+}

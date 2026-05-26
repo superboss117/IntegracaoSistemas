@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Shared.Events.Models;
+using Shared.Events.Services;
 using Shared.Messaging.Models;
 using Shared.Messaging.Services;
 
@@ -19,13 +20,15 @@ public class KafkaAnalyticsWorker : BackgroundService
     private readonly ILogger<KafkaAnalyticsWorker> _logger;
     private readonly IConfiguration _configuration;
     private readonly IRabbitMqPublisher _rabbitPublisher;
+    private readonly IEventPublisher _eventPublisher;
     private readonly string _connectionString;
 
-    public KafkaAnalyticsWorker(ILogger<KafkaAnalyticsWorker> logger, IConfiguration configuration, IRabbitMqPublisher rabbitPublisher)
+    public KafkaAnalyticsWorker(ILogger<KafkaAnalyticsWorker> logger, IConfiguration configuration, IRabbitMqPublisher rabbitPublisher, IEventPublisher eventPublisher)
     {
         _logger = logger;
         _configuration = configuration;
         _rabbitPublisher = rabbitPublisher;
+        _eventPublisher = eventPublisher;
         _connectionString = configuration.GetConnectionString("AnalyticsConnection") 
             ?? throw new InvalidOperationException("Connection string 'AnalyticsConnection' not found.");
     }
@@ -41,19 +44,24 @@ public class KafkaAnalyticsWorker : BackgroundService
 
         using var consumer = new ConsumerBuilder<Ignore, string>(config).Build();
         
-        // Wait until Kafka is ready
+        // Wait until Kafka is ready with progressive backoff: 2s, 5s, 10s
+        int attempts = 0;
         while (!stoppingToken.IsCancellationRequested)
         {
+            attempts++;
+            int backoff = attempts == 1 ? 2 : (attempts == 2 ? 5 : 10);
+            
+            _logger.LogInformation($"Tentativa {attempts} de ligação ao Kafka/Redpanda...");
             try
             {
                 consumer.Subscribe(new[] { "apostas-events", "jogos-events" });
-                _logger.LogInformation("AnalyticsWorker subscribed to topics: apostas-events, jogos-events");
+                _logger.LogInformation($"Ligação ao Kafka/Redpanda bem-sucedida! Subscrito nos tópicos: apostas-events, jogos-events");
                 break;
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Kafka not ready yet. Retrying in 5 seconds...");
-                await Task.Delay(5000, stoppingToken);
+                _logger.LogWarning($"Falha temporária de ligação ao Kafka/Redpanda: {ex.Message}. Aplicando backoff de {backoff}s antes de re-tentar...");
+                await Task.Delay(backoff * 1000, stoppingToken);
             }
         }
 
@@ -77,7 +85,7 @@ public class KafkaAnalyticsWorker : BackgroundService
                     {
                         if (await IsEventProcessedAsync(eventId))
                         {
-                            _logger.LogInformation($"[Analytics] Event {eventId} already processed. Skipping.");
+                            _logger.LogInformation($"[Analytics] Evento ignorado por idempotência. EventId: {eventId}");
                             continue;
                         }
 
@@ -192,6 +200,7 @@ public class KafkaAnalyticsWorker : BackgroundService
 
                 _logger.LogWarning($"[ALERTA GERADO] {alertaDetails}");
 
+                // 1. Enviar para RabbitMQ
                 var command = new ProcessarAlertaCommand
                 {
                     Alerta = alertaDetails,
@@ -203,6 +212,22 @@ public class KafkaAnalyticsWorker : BackgroundService
                     MessageType = nameof(ProcessarAlertaCommand),
                     Source = "AnalyticsWorker",
                     Payload = command
+                });
+
+                // 2. Publicar no Kafka
+                var kafkaAlerta = new AlertaGeradoEvent
+                {
+                    Tipo = "EXPOSICAO_ELEVADA",
+                    Nivel = "CRITICO",
+                    Detalhes = alertaDetails,
+                    DataHora = DateTime.UtcNow
+                };
+
+                await _eventPublisher.PublishAsync("alertas-events", new EventEnvelope<AlertaGeradoEvent>
+                {
+                    EventType = nameof(AlertaGeradoEvent),
+                    Source = "AnalyticsWorker",
+                    Payload = kafkaAlerta
                 });
             }
         }

@@ -18,7 +18,9 @@ builder.Services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
 
 builder.Services.AddHttpClient<SincronizacaoService>(client =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["ResultadosApiUrl"] ?? "http://resultadosapi:8080");
+    var url = builder.Configuration["ResultadosApiUrl"] ?? "http://resultadosapi:8080/";
+    if (!url.EndsWith("/")) url += "/";
+    client.BaseAddress = new Uri(url);
 });
 
 builder.Services.AddScoped<IDbExecutor, SqlDbExecutor>();
@@ -26,7 +28,6 @@ builder.Services.AddScoped<IApostaService, ApostaService>();
 builder.Services.AddScoped<IUtilizadorService, UtilizadorService>();
 builder.Services.AddScoped<IJogoService, JogoService>();
 builder.Services.AddScoped<IEstatisticaService, EstatisticaService>();
-builder.Services.AddScoped<SincronizacaoService>();
 builder.Services.AddScoped<IResultadoService, ResultadoService>();
 
 var app = builder.Build();
@@ -38,6 +39,14 @@ var app = builder.Build();
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
+
+app.MapGet("/health", () => Results.Ok(new
+{
+    status = "OK",
+    service = "ApostasApi",
+    timestampUtc = DateTime.UtcNow
+}));
+
 app.MapControllers();
 
 app.Run();

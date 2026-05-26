@@ -1,4 +1,5 @@
 using AnalyticsWorker;
+using Shared.Events.Services;
 using Shared.Messaging.Options;
 using Shared.Messaging.Services;
 
@@ -6,6 +7,7 @@ var builder = Host.CreateApplicationBuilder(args);
 
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMq"));
 builder.Services.AddSingleton<IRabbitMqPublisher, RabbitMqPublisher>();
+builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
 
 builder.Services.AddHostedService<KafkaAnalyticsWorker>();
 

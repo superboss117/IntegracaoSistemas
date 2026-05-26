@@ -29,9 +29,24 @@ public class Worker : BackgroundService
 
         using var consumer = new ConsumerBuilder<Ignore, string>(config).Build();
         
-        consumer.Subscribe(new[] { "jogos-events", "apostas-events" });
-        
-        _logger.LogInformation("EventLoggerWorker listening on topics: jogos-events, apostas-events");
+        int attempts = 0;
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            attempts++;
+            int backoff = attempts == 1 ? 2 : (attempts == 2 ? 5 : 10);
+            _logger.LogInformation($"Tentativa {attempts} de ligação ao Kafka/Redpanda (EventLoggerWorker)...");
+            try
+            {
+                consumer.Subscribe(new[] { "jogos-events", "apostas-events" });
+                _logger.LogInformation("Ligação ao Kafka/Redpanda (EventLoggerWorker) bem-sucedida! Subscrito nos tópicos: jogos-events, apostas-events");
+                break;
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogWarning($"Falha temporária de ligação ao Kafka/Redpanda (EventLoggerWorker): {ex.Message}. Aplicando backoff de {backoff}s antes de re-tentar...");
+                await Task.Delay(backoff * 1000, stoppingToken);
+            }
+        }
 
         try
         {

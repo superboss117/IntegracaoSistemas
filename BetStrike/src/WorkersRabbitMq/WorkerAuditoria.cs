@@ -28,37 +28,47 @@ public class WorkerAuditoria : BackgroundService
 
     private void InitializeRabbitMq()
     {
-        try
+        var factory = new ConnectionFactory
         {
-            var factory = new ConnectionFactory
-            {
-                HostName = _configuration["RabbitMq:HostName"] ?? "localhost",
-                Port = int.Parse(_configuration["RabbitMq:Port"] ?? "5672"),
-                UserName = _configuration["RabbitMq:UserName"] ?? "guest",
-                Password = _configuration["RabbitMq:Password"] ?? "guest"
-            };
+            HostName = _configuration["RabbitMq:HostName"] ?? "localhost",
+            Port = int.Parse(_configuration["RabbitMq:Port"] ?? "5672"),
+            UserName = _configuration["RabbitMq:UserName"] ?? "guest",
+            Password = _configuration["RabbitMq:Password"] ?? "guest"
+        };
 
-            _connection = factory.CreateConnection();
-            _channel = _connection.CreateModel();
-            
-            // Ensure queue exists
-            var dlxName = "apostas.dlx";
-            _channel.ExchangeDeclare(exchange: dlxName, type: ExchangeType.Direct, durable: true);
-            _channel.QueueDeclare(queue: "fila-dead-letter", durable: true, exclusive: false, autoDelete: false);
-            _channel.QueueBind(queue: "fila-dead-letter", exchange: dlxName, routingKey: "dead-letter");
-            
-            var queueArgs = new System.Collections.Generic.Dictionary<string, object>
-            {
-                { "x-dead-letter-exchange", dlxName },
-                { "x-dead-letter-routing-key", "dead-letter" }
-            };
-            _channel.QueueDeclare(queue: "fila-auditoria", durable: true, exclusive: false, autoDelete: false, arguments: queueArgs);
-
-            _logger.LogInformation("WorkerAuditoria connected to RabbitMQ.");
-        }
-        catch (Exception ex)
+        int attempts = 0;
+        while (true)
         {
-            _logger.LogError(ex, "Could not initialize RabbitMQ connection for WorkerAuditoria.");
+            attempts++;
+            int backoff = attempts == 1 ? 2 : (attempts == 2 ? 5 : 10);
+            _logger.LogInformation($"Tentativa {attempts} de ligação ao RabbitMQ (WorkerAuditoria)...");
+
+            try
+            {
+                _connection = factory.CreateConnection();
+                _channel = _connection.CreateModel();
+                
+                // Ensure queue exists
+                var dlxName = "apostas.dlx";
+                _channel.ExchangeDeclare(exchange: dlxName, type: ExchangeType.Direct, durable: true);
+                _channel.QueueDeclare(queue: "fila-dead-letter", durable: true, exclusive: false, autoDelete: false);
+                _channel.QueueBind(queue: "fila-dead-letter", exchange: dlxName, routingKey: "dead-letter");
+                
+                var queueArgs = new System.Collections.Generic.Dictionary<string, object>
+                {
+                    { "x-dead-letter-exchange", dlxName },
+                    { "x-dead-letter-routing-key", "dead-letter" }
+                };
+                _channel.QueueDeclare(queue: "fila-auditoria", durable: true, exclusive: false, autoDelete: false, arguments: queueArgs);
+
+                _logger.LogInformation("Ligação ao RabbitMQ (WorkerAuditoria) bem-sucedida! Filas declaradas.");
+                break;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Falha temporária de ligação ao RabbitMQ (WorkerAuditoria): {ex.Message}. Aplicando backoff de {backoff}s antes de re-tentar...");
+                System.Threading.Thread.Sleep(backoff * 1000);
+            }
         }
     }
 

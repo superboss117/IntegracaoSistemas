@@ -18,6 +18,14 @@ var app = builder.Build();
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
+
+app.MapGet("/health", () => Results.Ok(new
+{
+    status = "OK",
+    service = "ResultadosApi",
+    timestampUtc = DateTime.UtcNow
+}));
+
 app.MapControllers();
 
 app.Run();
