@@ -12,8 +12,10 @@ Após levantar a infraestrutura com Docker Compose, os seguintes serviços estar
 | :--- | :--- | :--- |
 | **ResultadosApi** | [http://localhost:5001/swagger](http://localhost:5001/swagger) | Registo de jogos e resultados (Parte 1) |
 | **ApostasApi** | [http://localhost:5002/swagger](http://localhost:5002/swagger) | Gestão de apostas e utilizadores (Parte 1) |
+
 | **AnalyticsAPI** | [http://localhost:5003/swagger](http://localhost:5003/swagger) | API REST para métricas analíticas e alertas (Parte 2) |
 | **Analytics Dashboard** | [http://localhost:5003/dashboard](http://localhost:5003/dashboard) | Interface Gráfica interativa de monitorização (Parte 2) |
+
 | **Redpanda Console** | [http://localhost:8080](http://localhost:8080) | Painel visual para exploração de tópicos Kafka |
 | **RabbitMQ Management** | [http://localhost:15672](http://localhost:15672) | Consola administrativa do broker de mensagens RabbitMQ |
 
